@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -6,14 +7,24 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+static int svr_on;
+
+void interrupt(int flag) {
+  svr_on = 0;
+}
+
 int main() {
   
+  struct sigaction interrupt_action;
   int svr_socket, req_socket;
   int buffer_size = 1024;
   char *buffer = malloc(buffer_size);
   struct sockaddr_in svr_addr;
   socklen_t svr_addr_len;
   int result;
+  
+  interrupt_action.sa_handler = interrupt;
+  sigaction(SIGINT, &interrupt_action, 0);
   
   svr_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (svr_socket > 0) {
@@ -30,7 +41,9 @@ int main() {
     printf("Binding socket.\n");
   }
   
-  while(1) {
+  svr_on = 1;
+  
+  while (svr_on) {
     
     result = listen(svr_socket, 10);
     if (result < 0) {
