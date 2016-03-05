@@ -7,15 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static int svr_on;
-
-void interrupt(int flag) {
-  svr_on = 0;
-}
-
 int main() {
   
-  struct sigaction interrupt_action;
   int svr_socket, req_socket;
   int buffer_size = 1024;
   char *buffer = malloc(buffer_size);
@@ -23,12 +16,14 @@ int main() {
   socklen_t svr_addr_len;
   int result;
   
-  interrupt_action.sa_handler = interrupt;
-  sigaction(SIGINT, &interrupt_action, 0);
-  
   svr_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (svr_socket > 0) {
     printf("The socket was created.\n");
+  }
+  
+  result = setsockopt(svr_socket, SOL_SOCKET, SO_REUSEADDR, &(int) {1}, sizeof(int));
+  if (result < 0) {
+    perror("Server: set socket options");
   }
   
   svr_addr.sin_family = AF_INET;
@@ -41,9 +36,7 @@ int main() {
     printf("Binding socket.\n");
   }
   
-  svr_on = 1;
-  
-  while (svr_on) {
+  while (1) {
     
     result = listen(svr_socket, 10);
     if (result < 0) {
@@ -63,7 +56,6 @@ int main() {
     
     result = recv(req_socket, buffer, buffer_size, 0);
     
-    // Write a response
     send(req_socket, "HTTP/1.1 200 OK\n", 16, 0);
     send(req_socket, "Content-length: 46\n", 19, 0);
     send(req_socket, "Content-Type: text/html\n\n", 25, 0);
