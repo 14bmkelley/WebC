@@ -10,7 +10,7 @@ int main() {
   
   int svr_socket, req_socket;
   int buffer_size = 1024;
-  char *buffer = malloc(buffsize);
+  char *buffer = malloc(buffer_size);
   struct sockaddr_in svr_addr;
   socklen_t svr_addr_len;
   int result;
@@ -48,18 +48,13 @@ int main() {
       printf("A client connected...\n");
     }
     
-    do {
-      result = recv(req_socket, buffer, buffer_size, 0);
-    } while (result != 0);
-    
-    printf("Recieved: %s\n", buffer);
+    result = recv(req_socket, buffer, buffer_size, 0);
     
     // Write a response
-    write(req_socket, "HTTP/1.1 200 OK\n", 16);
-    write(req_socket, "Content-length: 46\n", 19);
-    write(req_socket, "Content-Type: text/html\n\n", 25);
-    write(req_socket, "<html><body><h1>Hello world</h1></body></html>", 46);
-    
+    send(req_socket, "HTTP/1.1 200 OK\n", 16, 0);
+    send(req_socket, "Content-length: 46\n", 19, 0);
+    send(req_socket, "Content-Type: text/html\n\n", 25, 0);
+    send(req_socket, "<html><body><h1>Hello world</h1></body></html>\n", 47, 0);
     close(req_socket);
     
   }
