@@ -7,6 +7,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "parse.c"
+
 int main() {
   
   int svr_socket, req_socket;
@@ -28,7 +30,7 @@ int main() {
   
   svr_addr.sin_family = AF_INET;
   svr_addr.sin_addr.s_addr = INADDR_ANY;
-  svr_addr.sin_port = htons(8080);
+  svr_addr.sin_port = htons(8000);
   svr_addr_len = sizeof(svr_addr);
   
   result = bind(svr_socket, (struct sockaddr *) &svr_addr, svr_addr_len);
@@ -55,6 +57,11 @@ int main() {
     }
     
     result = recv(req_socket, buffer, buffer_size, 0);
+    
+    struct request *parsed_req = parse_request(buffer);
+    printf("%s %s %s\n", parsed_req->type, parsed_req->url, parsed_req->headers->key);
+    
+    free_request(parsed_req);
     
     send(req_socket, "HTTP/1.1 200 OK\n", 16, 0);
     send(req_socket, "Content-length: 46\n", 19, 0);
