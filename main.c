@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "parse.c"
+#include "parse.h"
 
 int main() {
   
@@ -52,15 +52,10 @@ int main() {
       exit(1);
     }
     
-    if (req_socket > 0) {
-      printf("A client connected...\n");
-    }
-    
     result = recv(req_socket, buffer, buffer_size, 0);
     
     struct request *parsed_req = parse_request(buffer);
-    printf("%s %s %s\n", parsed_req->type, parsed_req->url, parsed_req->headers->key);
-    
+    printf("%s %s\n", parsed_req->type, parsed_req->url);
     free_request(parsed_req);
     
     send(req_socket, "HTTP/1.1 200 OK\n", 16, 0);

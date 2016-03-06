@@ -2,28 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct request {
-  char *type;
-  char *url;
-  struct request_header *headers;
-};
-
-struct request_header {
-  char *key;
-  char *val;
-};
-
-void free_request(struct request *req) {
-  free(req->type);
-  free(req->url);
-  size_t headers_len = sizeof(req->headers);
-  struct request_header *current = req->headers;
-  for (int i = 0; i < headers_len; i++, current++) {
-    free(current->key);
-    free(current->val);
-  }
-  free(req);
-}
+#include "parse.h"
 
 struct request *parse_request(char *req) {
   
@@ -47,7 +26,7 @@ struct request *parse_request(char *req) {
   while (*++index != ' ') {
     url[url_len++] = *index;
   }
-  type[url_len++] = '\0';
+  url[url_len++] = '\0';
   
   // Skip to next line
   while (*++index != '\n') {}
@@ -108,5 +87,17 @@ struct request *parse_request(char *req) {
   
   return parsed_req;
   
+}
+
+void free_request(struct request *req) {
+  free(req->type);
+  free(req->url);
+  size_t headers_len = sizeof(req->headers);
+  struct request_header *current = req->headers;
+  for (int i = 0; i < headers_len; i++, current++) {
+    free(current->key);
+    free(current->val);
+  }
+  free(req);
 }
 
