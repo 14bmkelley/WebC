@@ -55,7 +55,11 @@ int main() {
     result = recv(req_socket, buffer, buffer_size, 0);
     
     struct request *parsed_req = parse_request(buffer);
-    printf("%s %s\n", parsed_req->type, parsed_req->url);
+    printf("%s %s", parsed_req->type, parsed_req->url);
+    char *path = parsed_req->parse_url_path(&parsed_req->url);
+    printf(", first path: %s", path);
+    printf(", leftover: %s\n", parsed_req->url);
+    free(path);
     free_request(parsed_req);
     
     send(req_socket, "HTTP/1.1 200 OK\n", 16, 0);

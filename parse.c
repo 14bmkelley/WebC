@@ -77,16 +77,41 @@ struct request *parse_request(char *req) {
   parsed_req->url = (char *) malloc(url_len * sizeof(char));
   parsed_req->headers =
     (struct request_header *) malloc(headers_len * sizeof (struct request_header));
+  parsed_req->parse_url_path = parse_url_path_def;
+  parsed_req->is_dir = is_dir_def;
   memcpy(parsed_req->type, type, type_len);
   memcpy(parsed_req->url, url, url_len);
   struct request_header *current = parsed_req->headers;
   for (int i = 0; i < headers_len; i++) {
-    *current = *headers[i];
-    current++;
+    *current++ = *headers[i];
   }
   
   return parsed_req;
   
+}
+
+char *parse_url_path_def(char **url) {
+  char path[100];
+  path[0] = '/';
+  size_t path_len = 1;
+  char *current = *url;
+  while (*++current != '\0' && *current != '/') {
+    path[path_len++] = *current;
+  }
+  path[path_len++] = '\0';
+  char *result = (char *) malloc(path_len * sizeof(char));
+  memcpy(result, path, path_len);
+  memcpy(*url, current, strlen(*url) - strlen(result) + 1);
+  return result;
+}
+
+uint8_t is_dir_def(char *path) {
+  for (int i = 0; i < sizeof(path); i++) {
+    if (path[i] == '.') {
+      return 0;
+    }
+  }
+  return 1;
 }
 
 void free_request(struct request *req) {
