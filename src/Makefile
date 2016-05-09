@@ -19,5 +19,6 @@ clean:
 	rm -f $(TARGET) $(OBJECTS)
 
 build:$(TARGET)
+	mkdir $(BUILDPATH)
 	cp $(TARGET) $(BUILDPATH)
 
