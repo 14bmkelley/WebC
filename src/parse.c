@@ -1,3 +1,30 @@
+/*
+ * parse.c
+ * Parses a request from a c-style string to a useful request struct. Functions
+ *    are prototyped in parse.h.
+ *
+ * Author:   Brandon M. Kelley
+ * Date:     May 8, 2016
+ * Version:  1.0
+ * License:  GNU GPL
+ * Copyright (C) 2016 Brandon M. Kelley
+ *
+ * This file is a part of WebC
+ *
+ * WebC is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * WebC is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with WebC.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,23 +75,6 @@ static char *parse_segment(char **input, char delimiter) {
 }
 
 /*
- * Determines the length of some null-terminated set of memory.
- * Parameters:
- *   void *mem: memory allocated.
- *   size_t alloc_size: size of individual elements to count.
- * Returns:
- *   int result: total number of alloc_size elements in mem.
- */
- /*
-static int mem_len(void *mem, size_t alloc_size) {
-   int index = -1, consistent = 0;
-   char *bytes = (char *) mem;
-   while (consistent != alloc_size)
-      consistent = (bytes[++index] == 0) ? consistent + 1 : 0;
-   return index % alloc_size;
-}
-*/
-/*
  * Parses the number of occurrences of a char in a c-style string.
  * Parameters:
  *   char *chars: c-style string to search for chosen char.
@@ -111,18 +121,18 @@ static char *parse_url_path_def(char **url) {
 }
 
 /*
- * Parses a complete http request from a client into a useful struct
+ * Parses a complete http request from a client into a useful struct.
  * Parameters:
  *   char *raw: the request to be parsed.
  * Returns:
  *   struct request parsed: the parsed request.
  */
 struct request *parse_request(char *raw) {
-   
+
    struct request *parsed = malloc(sizeof(struct request));
    char *raw_headers, *raw_request = malloc(strlen(raw) * sizeof(char));
    strcpy(raw_request, raw);
-   
+
    /* Read in type and url of the request */
    parsed->type = parse_segment(&raw_request, ' ');
    parsed->url  = parse_segment(&raw_request, ' ');
@@ -142,16 +152,23 @@ struct request *parse_request(char *raw) {
 
 /*
  * Frees all memory used by a request.
+ * Params:
+ *    struct request *req: The request to be completely freed
  */
 void free_request(struct request *req) {
-  int index;
-  free(req->type);
-  free(req->url);
-  for (index = 0; index < req->num_headers; index++) {
-    free(req->headers[index]->key);
-    free(req->headers[index]->val);
-    free(req->headers[index]);
-  }
-  free(req->headers);
-  free(req);
+
+   /* Free everything */
+   int index;
+   free(req->type);
+   free(req->url);
+
+   for (index = 0; index < req->num_headers; index++) {
+      free(req->headers[index]->key);
+      free(req->headers[index]->val);
+      free(req->headers[index]);
+   }
+
+   free(req->headers);
+   free(req);
+
 }
