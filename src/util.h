@@ -44,6 +44,8 @@ void report_errno(char *, int);
  * Returns:
  *    char *result: The string read from the file descriptor
  */
-char *read_string(int, char);
+char *fread_string(int, char);
+
+void append_string(char **, char *);
 
 #endif

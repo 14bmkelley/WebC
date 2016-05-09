@@ -31,6 +31,7 @@
 #include <ctype.h>
 
 #include "parse.h"
+#include "util.h"
 
 #define DEFAULT_WORD_LEN 10
 
@@ -75,38 +76,34 @@ static char *parse_segment(char **input, char delimiter) {
 }
 
 /*
- * Parses the number of occurrences of a char in a c-style string.
- * Parameters:
- *   char *chars: c-style string to search for chosen char.
- *   char chosen: the char to search for in provided chars.
- * Returns:
- *   int result: total occurrences of chosen in chars.
- */
-static int parse_count(char *chars, char chosen) {
-   int total = 0;
-   while (*chars != '\0') {
-      if (*chars++ == chosen)
-         total++;
-   }
-   return total;
-}
-
-/*
  * Parses a set of request headers from a raw request c-style string.
  * Parameters:
- *   char *raw_headers: request headers in c-style string form.
+ *   int socket: The web socket to read the request headers from.
  * Returns:
  *   request_header **result: set of request headers parsed from raw.
  */
-static void parse_headers(struct request *req, char *raw_headers) {
-   int total = parse_count(raw_headers, '\n');
+static void parse_headers(struct request *req, int socket) {
+
+   char *raw_headers = fread_string(socket, '\r'), *new_headers;
+   int header_len = 0, total = 0;
+
+   while (strlen(raw_headers) - header_len > 2) {
+      header_len = strlen(raw_headers);
+      new_headers = fread_string(socket, '\r');
+      append_string(&raw_headers, new_headers);
+      free(new_headers);
+      total++;
+   }
+
    req->headers = malloc(total * sizeof(struct request_header *));
    req->num_headers = total;
+
    while (total-- > 0) {
       req->headers[total] = malloc(sizeof(struct request_header));
       req->headers[total]->key = parse_segment(&raw_headers, ':');
       req->headers[total]->val = parse_segment(&raw_headers, '\n');
    }
+
 }
 
 /*
@@ -123,26 +120,23 @@ static char *parse_url_path_def(char **url) {
 /*
  * Parses a complete http request from a client into a useful struct.
  * Parameters:
- *   char *raw: the request to be parsed.
+ *   int socket: the web socket to read the request from.
  * Returns:
  *   struct request parsed: the parsed request.
  */
-struct request *parse_request(char *raw) {
+struct request *parse_request(int socket) {
 
    struct request *parsed = malloc(sizeof(struct request));
-   char *raw_headers, *raw_request = malloc(strlen(raw) * sizeof(char));
-   strcpy(raw_request, raw);
 
    /* Read in type and url of the request */
-   parsed->type = parse_segment(&raw_request, ' ');
-   parsed->url  = parse_segment(&raw_request, ' ');
+   parsed->type = fread_string(socket, ' ');
+   parsed->url  = fread_string(socket, ' ');
 
    /* Skip over the http/1.1 part */
-   free(parse_segment(&raw_request, '\n'));
+   free(fread_string(socket, '\n'));
 
    /* Read in request headers */
-   raw_headers = parse_segment(&raw_request, '\r');
-   parse_headers(parsed, raw_headers);
+   parse_headers(parsed, socket);
 
    /* Add function pointer and return request */
    parsed->parse_url_path = parse_url_path_def;

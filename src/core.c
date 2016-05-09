@@ -124,10 +124,17 @@ static void bind_server(struct svr_info *svr) {
 /*
  * Logs information from each request.
  * Params:
- *    char *request: The raw request to be recorded
+ *    struct request *request: The request struct to be logged
  */
-static void log_request(char *request) {
-   printf("%s\n\n", request);
+static void log_request(struct request *request) {
+   int index;
+   printf("%s %s successful\n", request->type, request->url);
+   printf("headers:\n");
+   for (index = 0; index < request->num_headers; index++) {
+      printf("   %s: %s\n", request->headers[index]->key,
+         request->headers[index]->val);
+   }
+   printf("\n");
 }
 
 /*
@@ -142,7 +149,6 @@ static struct request *receive_request(int *request_socket,
    struct svr_info svr) {
 
    socklen_t addr_len = sizeof(svr.addr);
-   char *raw_request;
    struct request *parsed_request;
 
    /* Try to listen for requests */
@@ -158,13 +164,9 @@ static struct request *receive_request(int *request_socket,
       report_errno(__FILE__, __LINE__);
    }
 
-   /* Read in the request */
-   raw_request = read_string(*request_socket, '\r');
-   log_request(raw_request);
-
-   /* Parse the request and return */
-   parsed_request = parse_request(raw_request);
-   free(raw_request);
+   /* Parse the request, log and return */
+   parsed_request = parse_request(*request_socket);
+   log_request(parsed_request);
 
    return parsed_request;
 

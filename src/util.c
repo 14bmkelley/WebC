@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "util.h"
@@ -56,20 +57,16 @@ void report_errno(char *file, int line) {
  *    char terminate: The character that ends reading
  * Returns:
  *    char *result: The string read from the file descriptor
+ * TODO: Make this bullet proof. It's not good when it can't find terminate...
  */
-char *read_string(int fd, char terminate) {
+char *fread_string(int fd, char terminate) {
 
    int length = 0, size = SIZE_STRING_DEFAULT;
    char *result = malloc(size * sizeof(char)), current;
-
-   /* Skip preceding whitespace */
    read(fd, &current, sizeof(char));
-   while (isspace(current) != 0 && current != terminate) {
-      read(fd, &current, sizeof(char));
-   }
 
    /* Add characters until terminate is reached */
-   while (current != terminate) {
+   while (current != terminate && current != '\0') {
 
       /* Current memory allocation is full, resize */
       if (length == size - 1) {
@@ -87,4 +84,10 @@ char *read_string(int fd, char terminate) {
    result[length - 1] = '\0';
    return result;
 
+}
+
+void append_string(char **dest, char *src) {
+   int dest_len = strlen(*dest), src_len = strlen(src);
+   *dest = realloc(*dest, (dest_len + src_len + 1) * sizeof(char));
+   strcpy(*dest + dest_len, src);
 }

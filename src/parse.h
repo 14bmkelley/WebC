@@ -45,11 +45,11 @@ struct request {
 /*
  * Parses a complete http request from a client into a useful struct.
  * Parameters:
- *   char *raw: the request to be parsed.
+ *   int socket: The web socket to read the request from
  * Returns:
  *   struct request parsed: the parsed request.
  */
-struct request *parse_request(char *);
+struct request *parse_request(int);
 
 /*
  * Frees all memory used by a request.
