@@ -117,6 +117,7 @@ static void bind_server(struct svr_info *svr) {
       report_errno(__FILE__, __LINE__);
    }
 
+   /* Print a message to the console */
    printf("Server root bound to localhost:%d/\n", PORT);
 
 }
