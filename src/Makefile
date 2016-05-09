@@ -15,10 +15,16 @@ $(TARGET):$(OBJECTS)
 $(OBJECTS):$(SOURCES) $(INCLUDES)
 	$(CC) -c $(CCFLAGS) $(SOURCES)
 
-clean:
-	rm -f $(TARGET) $(OBJECTS)
-
 build:$(TARGET)
 	mkdir $(BUILDPATH)
 	cp $(TARGET) $(BUILDPATH)
 
+clean:
+	rm -f $(TARGET) $(OBJECTS)
+
+clean_build:
+	rm -rf $(BUILDPATH)
+
+clean_all:
+	make clean
+	make clean_build
