@@ -30,6 +30,7 @@
 
 #include <netinet/in.h>
 #include <signal.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -48,6 +49,16 @@ struct svr_info {
    int socket;
    struct sockaddr_in addr;
 };
+
+/*
+ * Show information about the WebC license
+ */
+static void output_license() {
+
+   printf("\nWebC - a basic web server written in c.\n");
+   printf("Copyright (C) 2016 Brandon M. Kelley\n\n");
+
+}
 
 /*
  * Configure the server socket to listen for IP requests.
@@ -106,6 +117,17 @@ static void bind_server(struct svr_info *svr) {
       report_errno(__FILE__, __LINE__);
    }
 
+   printf("Server root bound to localhost:%d/\n", PORT);
+
+}
+
+/*
+ * Logs information from each request.
+ * Params:
+ *    char *request: The raw request to be recorded
+ */
+static void log_request(char *request) {
+   printf("%s\n\n", request);
 }
 
 /*
@@ -138,6 +160,7 @@ static struct request *receive_request(int *request_socket,
 
    /* Read in the request */
    raw_request = read_string(*request_socket, '\r');
+   log_request(raw_request);
 
    /* Parse the request and return */
    parsed_request = parse_request(raw_request);
@@ -175,16 +198,28 @@ int run_server() {
    int request_socket;
    struct request *incoming_request;
 
+   /* Show license information */
+   output_license();
+
+   /* Set up server for listening */
    set_socket_options(&svr.socket);
    set_addr_options(&svr.addr);
    bind_server(&svr);
+   printf("Server is now listening\n\n");
 
+   /* Loop forever, processing requests as they occur */
    while (1) {
+
+      /* Parse incoming request */
       incoming_request = receive_request(&request_socket, svr);
+
+      /* Decide how to respond to request and then free it*/
       handle_request(request_socket, incoming_request);
       free_request(incoming_request);
+
    }
 
+   /* We will sadly never reach here :( */
    close(svr.socket);
    return EXIT_SUCCESS;
 
