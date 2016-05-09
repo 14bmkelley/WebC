@@ -44,7 +44,6 @@
 #define PORT 8000
 #define SIZE_BACKLOG 10
 
-
 struct svr_info {
    int socket;
    struct sockaddr_in addr;
