@@ -129,7 +129,7 @@ static void bind_server(struct svr_info *svr) {
 static void log_request(struct request *request) {
    int index;
    printf("%s %s successful\n", request->type, request->url);
-   printf("headers:\n");
+   printf("Headers:\n");
    for (index = 0; index < request->num_headers; index++) {
       printf("   %s: %s\n", request->headers[index]->key,
          request->headers[index]->val);
@@ -176,9 +176,9 @@ static struct request *receive_request(int *request_socket,
  * Respond to a received request.
  * Params:
  *    int socket: The current request socket
- *    struct request *incoming_request: the current request data
+ *    struct request *request: the current request data
  */
-static void handle_request(int socket, struct request *incoming_request) {
+static void handle_request(int socket, struct request *request) {
 
    /* Just write hello world for now and close socket */
    write(socket, "HTTP/1.1 200 OK\n", 16);

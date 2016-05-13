@@ -46,6 +46,12 @@ void report_errno(char *, int);
  */
 char *fread_string(int, char);
 
+/*
+ * Appends the second parameter to the first, resizing as needed.
+ * Params:
+ *    char **dest: The resulting string to add src to
+ *    char *src: The string to append to dest
+ */
 void append_string(char **, char *);
 
 #endif

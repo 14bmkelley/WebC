@@ -86,6 +86,12 @@ char *fread_string(int fd, char terminate) {
 
 }
 
+/*
+ * Appends the second parameter to the first, resizing as needed.
+ * Params:
+ *    char **dest: The resulting string to add src to
+ *    char *src: The string to append to dest
+ */
 void append_string(char **dest, char *src) {
    int dest_len = strlen(*dest), src_len = strlen(src);
    *dest = realloc(*dest, (dest_len + src_len + 1) * sizeof(char));
