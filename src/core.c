@@ -28,26 +28,15 @@
  * along with WebC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <netinet/in.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
 
-#include "parse.h"
+#include "config.h"
+#include "request.h"
 #include "util.h"
 
-#define PROTOCOL 0
-#define PORT 8000
 #define SIZE_BACKLOG 10
-
-struct svr_info {
-   int socket;
-   struct sockaddr_in addr;
-};
 
 /*
  * Show information about the WebC license
@@ -59,83 +48,6 @@ static void output_license() {
 
 }
 
-/*
- * Configure the server socket to listen for IP requests.
- * Params:
- *    int *svr_socket: The socket that identifies the internet connection
- */
-static void set_socket_options(int *svr_socket) {
-
-   /* Basically just the boolean value of true */
-   int set_option = 1;
-
-   /* Try to create an IP socket */
-   *svr_socket = socket(AF_INET, SOCK_STREAM, PROTOCOL);
-
-   if (*svr_socket < 1) {
-      report_errno(__FILE__, __LINE__);
-   }
-
-   /* Try to configure IP socket to reuse addresses */
-   set_option = setsockopt(*svr_socket, SOL_SOCKET, SO_REUSEADDR, &set_option,
-      sizeof(int));
-
-   if (set_option < 0) {
-      report_errno(__FILE__, __LINE__);
-   }
-
-}
-
-/*
- * Populate address struct with internet socket settings.
- * Params:
- *    struct sockaddr_in *addr: the struct containing settings, to be filled
- */
-static void set_addr_options(struct sockaddr_in *addr) {
-
-   /* Listens for IP from any address on PORT */
-   addr->sin_family = AF_INET;
-   addr->sin_addr.s_addr = INADDR_ANY;
-   addr->sin_port = htons(PORT);
-
-}
-
-/*
- * Binds the address settings established in set_addr_options to the server
- *    socket established in set_socket_options.
- * Params:
- *    struct svr_info *svr: The struct holding the socket and address settings
- */
-static void bind_server(struct svr_info *svr) {
-
-   /* Try to bind the address settings to the server socket */
-   socklen_t addr_len = sizeof(svr->addr);
-   int result = bind(svr->socket, (struct sockaddr *) &svr->addr, addr_len);
-
-   if (result < 0) {
-      report_errno(__FILE__, __LINE__);
-   }
-
-   /* Print a message to the console */
-   printf("Server root bound to localhost:%d/\n", PORT);
-
-}
-
-/*
- * Logs information from each request.
- * Params:
- *    struct request *request: The request struct to be logged
- */
-static void log_request(struct request *request) {
-   int index;
-   printf("%s %s successful\n", request->type, request->url);
-   printf("Headers:\n");
-   for (index = 0; index < request->num_headers; index++) {
-      printf("   %s: %s\n", request->headers[index]->key,
-         request->headers[index]->val);
-   }
-   printf("\n");
-}
 
 /*
  * Read in a request from the IP socket and parse it.
@@ -180,12 +92,11 @@ static struct request *receive_request(int *request_socket,
  */
 static void handle_request(int socket, struct request *request) {
 
-   /* Just write hello world for now and close socket */
-   write(socket, "HTTP/1.1 200 OK\n", 16);
-   write(socket, "Content-length: 46\n", 19);
-   write(socket, "Content-Type: text/html\n\n", 25);
-   write(socket, "<html><body><h1>Hello world!</h1></body></html>\n", 48);
-   close(socket);
+      write(socket, "HTTP/1.1 200 OK\n", 16);
+      write(socket, "Content-length: 46\n", 19);
+      write(socket, "Content-Type: text/html\n\n", 25);
+      write(socket, "<html><body><h1>Hello world!</h1></body></html>\n", 48);
+      close(socket);
 
 }
 
@@ -204,9 +115,7 @@ int run_server() {
    output_license();
 
    /* Set up server for listening */
-   set_socket_options(&svr.socket);
-   set_addr_options(&svr.addr);
-   bind_server(&svr);
+   config_server(&svr);
    printf("Server is now listening\n\n");
 
    /* Loop forever, processing requests as they occur */

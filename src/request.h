@@ -1,5 +1,5 @@
 /*
- * parse.h
+ * request.h
  * Makes available the use of the request struct, as well as related functions.
  *
  * Author:   Brandon M. Kelley
@@ -24,8 +24,8 @@
  * along with WebC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PARSE_H
-#define PARSE_H
+#ifndef REQUEST_H
+#define REQUEST_H
 
 typedef char *(*parse_url_path)(char **);
 
@@ -57,5 +57,12 @@ struct request *parse_request(int);
  *    struct request *req: The request to be completely freed
  */
 void free_request(struct request *);
+
+/*
+ * Prints a request to the console.
+ * Params:
+ *    struct request *request: The request to be printed
+ */
+void log_request(struct request *);
 
 #endif

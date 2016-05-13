@@ -44,7 +44,7 @@ void report_errno(char *, int);
  * Returns:
  *    char *result: The string read from the file descriptor
  */
-char *fread_string(int, char);
+char *fdgets(int, char);
 
 /*
  * Appends the second parameter to the first, resizing as needed.

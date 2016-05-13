@@ -1,7 +1,7 @@
 /*
- * parse.c
+ * request.c
  * Parses a request from a c-style string to a useful request struct. Functions
- *    are prototyped in parse.h.
+ *    are prototyped in request.h.
  *
  * Author:   Brandon M. Kelley
  * Date:     May 8, 2016
@@ -30,7 +30,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "parse.h"
+#include "request.h"
 #include "util.h"
 
 #define DEFAULT_WORD_LEN 10
@@ -81,15 +81,16 @@ static char *parse_segment(char **input, char delimiter) {
  *   int socket: The web socket to read the request headers from.
  * Returns:
  *   request_header **result: set of request headers parsed from raw.
+ * TODO: Rewrite to avoid the use of parse_segment.
  */
 static void parse_headers(struct request *req, int socket) {
 
-   char *raw_headers = fread_string(socket, '\r'), *new_headers;
+   char *raw_headers = fdgets(socket, '\r'), *new_headers;
    int header_len = 0, total = 0;
 
    while (strlen(raw_headers) - header_len > 2) {
       header_len = strlen(raw_headers);
-      new_headers = fread_string(socket, '\r');
+      new_headers = fdgets(socket, '\r');
       append_string(&raw_headers, new_headers);
       free(new_headers);
       total++;
@@ -114,7 +115,7 @@ static void parse_headers(struct request *req, int socket) {
  *   char *result: the path found.
  */
 static char *parse_url_path_def(char **url) {
-  return parse_segment(url, '/');
+   return parse_segment(url, '/');
 }
 
 /*
@@ -129,11 +130,11 @@ struct request *parse_request(int socket) {
    struct request *parsed = malloc(sizeof(struct request));
 
    /* Read in type and url of the request */
-   parsed->type = fread_string(socket, ' ');
-   parsed->url  = fread_string(socket, ' ');
+   parsed->type = fdgets(socket, ' ');
+   parsed->url  = fdgets(socket, ' ');
 
    /* Skip over the http/1.1 part */
-   free(fread_string(socket, '\n'));
+   free(fdgets(socket, '\n'));
 
    /* Read in request headers */
    parse_headers(parsed, socket);
@@ -165,4 +166,20 @@ void free_request(struct request *req) {
    free(req->headers);
    free(req);
 
+}
+
+/*
+ * Prints a request to the console.
+ * Params:
+ *    struct request *request: The request to be printed
+ */
+void log_request(struct request *request) {
+   int index;
+   printf("%s %s successful\n", request->type, request->url);
+   printf("Headers:\n");
+   for (index = 0; index < request->num_headers; index++) {
+      printf("   %s: %s\n", request->headers[index]->key,
+         request->headers[index]->val);
+   }
+   printf("\n");
 }

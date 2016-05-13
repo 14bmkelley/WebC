@@ -59,7 +59,7 @@ void report_errno(char *file, int line) {
  *    char *result: The string read from the file descriptor
  * TODO: Make this bullet proof. It's not good when it can't find terminate...
  */
-char *fread_string(int fd, char terminate) {
+char *fdgets(int fd, char terminate) {
 
    int length = 0, size = SIZE_STRING_DEFAULT;
    char *result = malloc(size * sizeof(char)), current;
