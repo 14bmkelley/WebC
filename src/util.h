@@ -47,6 +47,16 @@ void report_errno(char *, int);
 char *fdgets(int, char);
 
 /*
+ * Parses a segment of the input delimited by a character.
+ * Parameters:
+ *   char **input: the address of a c-style string to remove the segment from.
+ *   char delimiter: the delimiter to use when removing a segment from input.
+ * Returned:
+ *   char *result: the segment removed from input
+ */
+char *substring(char **, char);
+
+/*
  * Appends the second parameter to the first, resizing as needed.
  * Params:
  *    char **dest: The resulting string to add src to

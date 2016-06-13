@@ -32,7 +32,7 @@
 
 #include "util.h"
 
-#define SIZE_STRING_DEFAULT 10
+#define DEFAULT_WORD_LEN 10
 
 /*
  * Provides easy error reporting.
@@ -57,16 +57,15 @@ void report_errno(char *file, int line) {
  *    char terminate: The character that ends reading
  * Returns:
  *    char *result: The string read from the file descriptor
- * TODO: Make this bullet proof. It's not good when it can't find terminate...
  */
 char *fdgets(int fd, char terminate) {
 
-   int length = 0, size = SIZE_STRING_DEFAULT;
+   int length = 0, size = DEFAULT_WORD_LEN, read_result;
    char *result = malloc(size * sizeof(char)), current;
-   read(fd, &current, sizeof(char));
+   read_result = read(fd, &current, sizeof(char));
 
    /* Add characters until terminate is reached */
-   while (current != terminate && current != '\0') {
+   while (current != terminate && read_result > 0) {
 
       /* Current memory allocation is full, resize */
       if (length == size - 1) {
@@ -75,13 +74,54 @@ char *fdgets(int fd, char terminate) {
 
       /* Add character and read the next one */
       result[length++] = current;
-      read(fd, &current, sizeof(char));
+      read_result = read(fd, &current, sizeof(char));
 
    }
 
    /* Reallocate to the exact amount necessary, add '\0' and return */
    result = realloc(result, ++length * sizeof(char));
    result[length - 1] = '\0';
+   return result;
+
+}
+
+/*
+ * Parses a segment of the input delimited by a character.
+ * Parameters:
+ *   char **input: the address of a c-style string to remove the segment from.
+ *   char delimiter: the delimiter to use when removing a segment from input.
+ * Returned:
+ *   char *result: the segment removed from input
+ */
+char *substring(char **input, char delimiter) {
+
+   size_t allocated = DEFAULT_WORD_LEN, length = 0;
+   char *result = (char *) malloc(allocated * sizeof(char));
+   char *current = *input, *output;
+
+   /* Increment up to the beginning of a segment */
+   while (isspace(*current) != 0 || *current == delimiter) {
+      current++;
+   };
+
+   /* Loop while the segment hasn't ended and add characters to result */
+   while (*current != delimiter && *current != '\0') {
+      if (length == allocated - 1) {
+         result = (char *) realloc(result, (allocated *= 2) * sizeof(char));
+      }
+      result[length++] = *current++;
+   }
+
+   /* Allocate exactly enough room for a valid c-style string */
+   result = (char *) realloc(result, (length + 1) * sizeof(char));
+   result[length] = '\0';
+
+   /* Remove the segment from the input */
+   output = (char *) malloc((strlen(*input) - length) * sizeof(char));
+   strcpy(output, &current[1]);
+   free(*input);
+   *input = output;
+
    return result;
 
 }

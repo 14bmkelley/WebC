@@ -28,9 +28,12 @@
  * along with WebC.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "config.h"
 #include "request.h"
@@ -90,13 +93,38 @@ static struct request *receive_request(int *request_socket,
  *    int socket: The current request socket
  *    struct request *request: the current request data
  */
-static void handle_request(int socket, struct request *request) {
+static void handle_request(int socket, struct request *req) {
 
+   char *dir = malloc(7 * sizeof(char)), *static_html, *dynamic_content_len;
+   int static_fd, static_len, static_len_len;
+
+   strcpy(dir, "static");
+   append_string(&dir, req->url);
+   static_fd = open(dir, O_RDONLY);
+
+   if (static_fd > 0) {
+      static_html = fdgets(static_fd, EOF);
+      static_len = strlen(static_html);
+      static_len_len = ceil(log(static_len) / log(10));
+      dynamic_content_len = malloc((18 + static_len_len) * sizeof(char));
+      sprintf(dynamic_content_len, "Content-length: %d\n", static_len);
       write(socket, "HTTP/1.1 200 OK\n", 16);
-      write(socket, "Content-length: 46\n", 19);
+      write(socket, dynamic_content_len, 17 + static_len_len);
       write(socket, "Content-Type: text/html\n\n", 25);
-      write(socket, "<html><body><h1>Hello world!</h1></body></html>\n", 48);
-      close(socket);
+      write(socket, static_html, static_len);
+      free(static_html);
+      free(dynamic_content_len);
+      close(static_fd);
+   }
+
+   else {
+      write(socket, "HTTP/1.1 200 OK\n", 16);
+      write(socket, "Content-length: 48\n", 19);
+      write(socket, "Content-Type: text/html\n\n", 25);
+      write(socket, "<html><body><h1>Page not found</h1></body></html>\n", 48);
+   }
+
+   free(dir);
 
 }
 
@@ -126,6 +154,7 @@ int run_server() {
 
       /* Decide how to respond to request and then free it*/
       handle_request(request_socket, incoming_request);
+      close(request_socket);
       free_request(incoming_request);
 
    }

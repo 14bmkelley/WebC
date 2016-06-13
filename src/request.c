@@ -33,47 +33,7 @@
 #include "request.h"
 #include "util.h"
 
-#define DEFAULT_WORD_LEN 10
-
-/*
- * Parses a segment of the input delimited by a character.
- * Parameters:
- *   char **input: the address of a c-style string to remove the segment from.
- *   char delimiter: the delimiter to use when removing a segment from input.
- * Returned:
- *   char *result: the segment removed from input
- */
-static char *parse_segment(char **input, char delimiter) {
-
-   size_t allocated = DEFAULT_WORD_LEN, length = 0;
-   char *result = (char *) malloc(allocated * sizeof(char));
-   char *current = *input, *output;
-
-   /* Increment up to the beginning of a segment */
-   while (isspace(*current) != 0 || *current == delimiter) {
-      current++;
-   };
-
-   /* Loop while the segment hasn't ended and add characters to result */
-   while (*current != delimiter && *current != '\0') {
-      if (length == allocated - 1)
-         result = (char *) realloc(result, (allocated *= 2) * sizeof(char));
-      result[length++] = *current++;
-   }
-
-   /* Allocate exactly enough room for a valid c-style string */
-   result = (char *) realloc(result, (length + 1) * sizeof(char));
-   result[length] = '\0';
-
-   /* Remove the segment from the input */
-   output = (char *) malloc((strlen(*input) - length) * sizeof(char));
-   strcpy(output, &current[1]);
-   free(*input);
-   *input = output;
-
-   return result;
-
-}
+#define DEFAULT_HEADER_LEN 10
 
 /*
  * Parses a set of request headers from a raw request c-style string.
@@ -81,29 +41,39 @@ static char *parse_segment(char **input, char delimiter) {
  *   int socket: The web socket to read the request headers from.
  * Returns:
  *   request_header **result: set of request headers parsed from raw.
- * TODO: Rewrite to avoid the use of parse_segment.
  */
-static void parse_headers(struct request *req, int socket) {
 
-   char *raw_headers = fdgets(socket, '\r'), *new_headers;
-   int header_len = 0, total = 0;
+static void parse_headers(struct request *request, int socket) {
 
-   while (strlen(raw_headers) - header_len > 2) {
-      header_len = strlen(raw_headers);
-      new_headers = fdgets(socket, '\r');
-      append_string(&raw_headers, new_headers);
-      free(new_headers);
-      total++;
+   char *test;
+   size_t allocated = DEFAULT_HEADER_LEN;
+   request->headers = malloc(allocated * sizeof(struct request_header *));
+
+   test = fdgets(socket, '\n');
+
+   while (strlen(test) > 1) {
+
+      if (request->num_headers == allocated - 1) {
+         allocated *= 2;
+         request->headers = realloc(request->headers,
+            allocated * sizeof(struct request_header *));
+      }
+
+      request->headers[request->num_headers] =
+         malloc(sizeof(struct request_header));
+      request->headers[request->num_headers]->key = substring(&test, ':');
+      request->headers[request->num_headers]->val = substring(&test, '\r');
+      request->num_headers++;
+
+      free(test);
+      test = fdgets(socket, '\n');
+
    }
 
-   req->headers = malloc(total * sizeof(struct request_header *));
-   req->num_headers = total;
+   request->headers = realloc(request->headers,
+      request->num_headers * sizeof(struct request_header *));
 
-   while (total-- > 0) {
-      req->headers[total] = malloc(sizeof(struct request_header));
-      req->headers[total]->key = parse_segment(&raw_headers, ':');
-      req->headers[total]->val = parse_segment(&raw_headers, '\n');
-   }
+   free(test);
 
 }
 
@@ -115,7 +85,7 @@ static void parse_headers(struct request *req, int socket) {
  *   char *result: the path found.
  */
 static char *parse_url_path_def(char **url) {
-   return parse_segment(url, '/');
+   return substring(url, '/');
 }
 
 /*
@@ -128,6 +98,7 @@ static char *parse_url_path_def(char **url) {
 struct request *parse_request(int socket) {
 
    struct request *parsed = malloc(sizeof(struct request));
+   memset(parsed, 0, sizeof(struct request));
 
    /* Read in type and url of the request */
    parsed->type = fdgets(socket, ' ');
@@ -174,12 +145,14 @@ void free_request(struct request *req) {
  *    struct request *request: The request to be printed
  */
 void log_request(struct request *request) {
-   int index;
+   /* int index; */
    printf("%s %s successful\n", request->type, request->url);
+   /*
    printf("Headers:\n");
    for (index = 0; index < request->num_headers; index++) {
       printf("   %s: %s\n", request->headers[index]->key,
          request->headers[index]->val);
    }
    printf("\n");
+   */
 }
