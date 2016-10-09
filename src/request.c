@@ -32,6 +32,7 @@
 
 #include "request.h"
 #include "util.h"
+#include "hashtable.h"
 
 #define DEFAULT_HEADER_LEN 10
 
@@ -45,33 +46,19 @@
 
 static void parse_headers(struct request *request, int socket) {
 
-   char *test;
-   size_t allocated = DEFAULT_HEADER_LEN;
-   request->headers = malloc(allocated * sizeof(struct request_header *));
+   char *test, *key, *val;
 
    test = fdgets(socket, '\n');
 
    while (strlen(test) > 1) {
 
-      if (request->num_headers == allocated - 1) {
-         allocated *= 2;
-         request->headers = realloc(request->headers,
-            allocated * sizeof(struct request_header *));
-      }
-
-      request->headers[request->num_headers] =
-         malloc(sizeof(struct request_header));
-      request->headers[request->num_headers]->key = substring(&test, ':');
-      request->headers[request->num_headers]->val = substring(&test, '\r');
-      request->num_headers++;
-
+      key = substring(&test, ':');
+      val = substring(&test, '\r');
+      set(request->headers, key, val, (strlen(val) + 1) * sizeof(char));
       free(test);
       test = fdgets(socket, '\n');
 
    }
-
-   request->headers = realloc(request->headers,
-      request->num_headers * sizeof(struct request_header *));
 
    free(test);
 
@@ -108,6 +95,7 @@ struct request *parse_request(int socket) {
    free(fdgets(socket, '\n'));
 
    /* Read in request headers */
+   parsed->headers = create_hashtable();
    parse_headers(parsed, socket);
 
    /* Add function pointer and return request */
@@ -124,17 +112,9 @@ struct request *parse_request(int socket) {
 void free_request(struct request *req) {
 
    /* Free everything */
-   int index;
    free(req->type);
    free(req->url);
-
-   for (index = 0; index < req->num_headers; index++) {
-      free(req->headers[index]->key);
-      free(req->headers[index]->val);
-      free(req->headers[index]);
-   }
-
-   free(req->headers);
+   free_hashtable(req->headers);
    free(req);
 
 }
@@ -145,14 +125,5 @@ void free_request(struct request *req) {
  *    struct request *request: The request to be printed
  */
 void log_request(struct request *request) {
-   /* int index; */
    printf("%s %s successful\n", request->type, request->url);
-   /*
-   printf("Headers:\n");
-   for (index = 0; index < request->num_headers; index++) {
-      printf("   %s: %s\n", request->headers[index]->key,
-         request->headers[index]->val);
-   }
-   printf("\n");
-   */
 }

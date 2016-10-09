@@ -37,6 +37,7 @@
 
 #include "config.h"
 #include "request.h"
+#include "response.h"
 #include "util.h"
 
 #define SIZE_BACKLOG 10
@@ -50,7 +51,6 @@ static void output_license() {
    printf("Copyright (C) 2016 Brandon M. Kelley\n\n");
 
 }
-
 
 /*
  * Read in a request from the IP socket and parse it.
@@ -68,7 +68,7 @@ static struct request *receive_request(int *request_socket,
 
    /* Try to listen for requests */
    if (listen(svr.socket, SIZE_BACKLOG) < 0) {
-      report_errno(__FILE__, __LINE__);
+      report_errno();
    }
 
    /* Try to accept a new incoming request */
@@ -76,12 +76,11 @@ static struct request *receive_request(int *request_socket,
       &addr_len);
 
    if (*request_socket < 0) {
-      report_errno(__FILE__, __LINE__);
+      report_errno();
    }
 
    /* Parse the request, log and return */
    parsed_request = parse_request(*request_socket);
-   log_request(parsed_request);
 
    return parsed_request;
 
@@ -95,20 +94,33 @@ static struct request *receive_request(int *request_socket,
  */
 static void handle_request(int socket, struct request *req) {
 
-   char *dir = malloc(7 * sizeof(char)), *static_html, *dynamic_content_len;
+   struct response *response = create_response();
+   char *dir = malloc(7 * sizeof(char));
+   char *static_html, *dynamic_content_len;
    int static_fd, static_len, static_len_len;
 
+   char *url;
+   if (req->url[1] == '\0') {
+      url = "/index.html";
+   }
+   else {
+      url = req->url;
+   }
+
+   response->initial_request = req;
+
    strcpy(dir, "static");
-   append_string(&dir, req->url);
+   append_string(&dir, url);
    static_fd = open(dir, O_RDONLY);
 
    if (static_fd > 0) {
+      response->status_code = 200;
       static_html = fdgets(static_fd, EOF);
       static_len = strlen(static_html);
       static_len_len = ceil(log(static_len) / log(10));
       dynamic_content_len = malloc((18 + static_len_len) * sizeof(char));
       sprintf(dynamic_content_len, "Content-length: %d\n", static_len);
-      write(socket, "HTTP/1.1 200 OK\n", 16);
+      write(socket, "HTTP/1.1 200 OK\n", 17);
       write(socket, dynamic_content_len, 17 + static_len_len);
       write(socket, "Content-Type: text/html\n\n", 25);
       write(socket, static_html, static_len);
@@ -118,11 +130,14 @@ static void handle_request(int socket, struct request *req) {
    }
 
    else {
-      write(socket, "HTTP/1.1 200 OK\n", 16);
-      write(socket, "Content-length: 48\n", 19);
+      response->status_code = 404;
+      write(socket, "HTTP/1.1 404 Not Found\n", 16);
       write(socket, "Content-Type: text/html\n\n", 25);
-      write(socket, "<html><body><h1>Page not found</h1></body></html>\n", 48);
+      write(socket, "\n<html><h2>Error: 404</h2><p>Page not found</p></html>\n\n", 56);
    }
+
+   log_response(response);
+   free_response(response);
 
    free(dir);
 

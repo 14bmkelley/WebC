@@ -27,17 +27,14 @@
 #ifndef REQUEST_H
 #define REQUEST_H
 
-typedef char *(*parse_url_path)(char **);
+#include "hashtable.h"
 
-struct request_header {
-  char *key;
-  char *val;
-};
+typedef char *(*parse_url_path)(char **);
 
 struct request {
   char *type;
   char *url;
-  struct request_header **headers;
+  struct hashtable *headers;
   int num_headers;
   char *(*parse_url_path)(char **);
 };

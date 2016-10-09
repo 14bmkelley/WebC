@@ -27,13 +27,20 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define malloc(x)       safe_malloc((x))
+#define realloc(x, y)   safe_realloc((x), (y))
+#define fork()          safe_fork()
+#define report_errno()  report_errno_with_data(__FILE__, __LINE__)
+
+#include "response.h"
+
 /*
  * Provides easy error reporting.
  * Params:
  *    char *file: Name of the file error occurred in
  *    int line: Line number the error occurred on
  */
-void report_errno(char *, int);
+void report_errno_with_data(char *, int);
 
 /*
  * Reads and allocates a string from the given file descriptor until the
@@ -63,5 +70,9 @@ char *substring(char **, char);
  *    char *src: The string to append to dest
  */
 void append_string(char **, char *);
+
+void *safe_malloc(size_t);
+void *safe_realloc(void *, size_t);
+pid_t safe_fork();
 
 #endif

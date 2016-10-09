@@ -48,7 +48,7 @@ static void set_socket_options(int *svr_socket) {
    *svr_socket = socket(AF_INET, SOCK_STREAM, PROTOCOL);
 
    if (*svr_socket < 1) {
-      report_errno(__FILE__, __LINE__);
+      report_errno();
    }
 
    /* Try to configure IP socket to reuse addresses */
@@ -56,7 +56,7 @@ static void set_socket_options(int *svr_socket) {
       sizeof(int));
 
    if (set_option < 0) {
-      report_errno(__FILE__, __LINE__);
+      report_errno();
    }
 
 }
@@ -88,7 +88,7 @@ static void bind_server(struct svr_info *svr) {
    int result = bind(svr->socket, (struct sockaddr *) &svr->addr, addr_len);
 
    if (result < 0) {
-      report_errno(__FILE__, __LINE__);
+      report_errno();
    }
 
    /* Print a message to the console */

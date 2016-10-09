@@ -30,9 +30,34 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "util.h"
-
 #define DEFAULT_WORD_LEN 10
+
+void *safe_malloc(size_t size) {
+   void *ptr = malloc(size);
+   if (ptr == NULL) {
+      perror("safe malloc failed.");
+      exit(EXIT_FAILURE);
+   }
+   return ptr;
+}
+
+void *safe_realloc(void *ptr, size_t size) {
+   ptr = realloc(ptr, size);
+   if (ptr == NULL) {
+      perror("safe realloc failed.");
+      exit(EXIT_FAILURE);
+   }
+   return ptr;
+}
+
+pid_t safe_fork() {
+   pid_t pid = fork();
+   if (pid == -1) {
+      perror("safe fork failed.");
+      exit(EXIT_FAILURE);
+   }
+   return pid;
+}
 
 /*
  * Provides easy error reporting.
@@ -40,7 +65,7 @@
  *    char *file: Name of the file error occurred in
  *    int line: Line number the error occurred on
  */
-void report_errno(char *file, int line) {
+void report_errno_with_data(char *file, int line) {
 
    /* So snazzy */
    fprintf(stderr, "%s, line %d: ", file, line);
