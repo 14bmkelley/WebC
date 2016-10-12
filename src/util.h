@@ -27,12 +27,15 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define malloc(x)       safe_malloc((x))
-#define realloc(x, y)   safe_realloc((x), (y))
-#define fork()          safe_fork()
-#define report_errno()  report_errno_with_data(__FILE__, __LINE__)
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "response.h"
+
+#define malloc(x)       safe_malloc((x))
+#define realloc(x, y)   safe_realloc((x), (y))
+#define fork(void)          safe_fork()
+#define report_errno()  report_errno_with_data(__FILE__, __LINE__)
 
 /*
  * Provides easy error reporting.
